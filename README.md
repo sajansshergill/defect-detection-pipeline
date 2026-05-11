@@ -9,30 +9,7 @@ Manufacturing lines generate thousands of product surfact images daily. Manual i
 - Exposes results through an interactive Streamlit dashboard for QA operators
 
 ## 🏗️ Architecture Overview
-
-Raw Images (MVTec AD Dataset)
-        │
-        ▼
-┌──────────────────────┐
-│   Data Preprocessing  │  ← Augmentation, normalization, class-weighted sampling
-└──────────┬───────────┘
-           │
-     ┌─────┼──────────┐
-     ▼     ▼          ▼
-ResNet-50  EfficientNet-B4  ViT-B/16
-(Texture)  (Scale-aware)   (Global attention)
-     │     │          │
-     └─────┴──────────┘
-           │
-     Ensemble Layer (soft voting with learned weights)
-           │
-     ┌─────▼──────────────┐
-     │  Prediction +       │
-     │  Grad-CAM Heatmap   │
-     └─────┬──────────────┘
-           │
-     Streamlit Dashboard
-
+<img width="1086" height="1020" alt="image" src="https://github.com/user-attachments/assets/38b64d5d-846d-4fec-8fed-b8fc5c39dca7" />
 
 ## 📁 Project Structure
 <img width="754" height="958" alt="image" src="https://github.com/user-attachments/assets/8c3b4164-c76d-48ad-8ce0-ba6f6f7d9801" />
