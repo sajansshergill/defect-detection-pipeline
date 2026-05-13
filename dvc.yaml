@@ -1,0 +1,72 @@
+stages:
+  train_resnet:
+    cmd: python src/training/train.py --model resnet
+    deps:
+      - src/data
+      - src/models
+      - src/training/train.py
+      - data/mvtec_ad
+    params:
+      - data
+      - classes
+      - training
+      - models.resnet
+      - mlflow
+    outs:
+      - artifacts/checkpoints/resnet_best.pt
+
+  train_efficientnet:
+    cmd: python src/training/train.py --model efficientnet
+    deps:
+      - src/data
+      - src/models
+      - src/training/train.py
+      - data/mvtec_ad
+    params:
+      - data
+      - classes
+      - training
+      - models.efficientnet
+      - mlflow
+    outs:
+      - artifacts/checkpoints/efficientnet_best.pt
+
+  train_vit:
+    cmd: python src/training/train.py --model vit
+    deps:
+      - src/data
+      - src/models
+      - src/training/train.py
+      - data/mvtec_ad
+    params:
+      - data
+      - classes
+      - training
+      - models.vit
+      - mlflow
+    outs:
+      - artifacts/checkpoints/vit_best.pt
+
+  evaluate_ensemble:
+    cmd: >
+      python src/training/evaluate.py --mode ensemble
+      --checkpoints
+      resnet=artifacts/checkpoints/resnet_best.pt
+      efficientnet=artifacts/checkpoints/efficientnet_best.pt
+      vit=artifacts/checkpoints/vit_best.pt
+    deps:
+      - src/training/evaluate.py
+      - src/models
+      - artifacts/checkpoints/resnet_best.pt
+      - artifacts/checkpoints/efficientnet_best.pt
+      - artifacts/checkpoints/vit_best.pt
+      - data/mvtec_ad
+    params:
+      - data
+      - classes
+      - training
+      - ensemble
+    outs:
+      - artifacts/evaluation/ensemble_test_report.yaml
+      - artifacts/evaluation/ensemble_test_confusion_matrix.csv
+      - artifacts/evaluation/ensemble_test_predictions.csv

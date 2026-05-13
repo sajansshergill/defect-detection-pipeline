@@ -1,85 +1,101 @@
-# 🔍 Manufacturing Defect Detection Pipeline
-A multi-model computer vision ensemble for industrial surfact detect classification —— built to mirror SAS's applied AI use cases in manufacturing quality control.
+# Manufacturing Defect Detection Pipeline
 
-## 📌 Problem Statement
-Manufacturing lines generate thousands of product surfact images daily. Manual inspection is slow, inconsistent, and expensive. This project builds and end-to-end computer vision pipeline that:
-- Classifies surface defects across 5 categories: **scratch, dent, stain, crack, none**
-- Ensemble three deep learning architectures for robust predictions
-- Surfaces explainability via Grad-CAM heatmaps overlaid on defect regions
-- Exposes results through an interactive Streamlit dashboard for QA operators
+End-to-end computer vision pipeline for manufacturing surface defect classification.
+It trains ResNet, EfficientNet, and ViT classifiers, evaluates a soft-voting ensemble,
+tunes a recall-oriented defect threshold, generates Grad-CAM explanations, and serves
+predictions through a Streamlit dashboard.
 
-## 🏗️ Architecture Overview
-<img width="1086" height="1020" alt="image" src="https://github.com/user-attachments/assets/38b64d5d-846d-4fec-8fed-b8fc5c39dca7" />
+## Problem
 
-## 📁 Project Structure
-<img width="754" height="958" alt="image" src="https://github.com/user-attachments/assets/8c3b4164-c76d-48ad-8ce0-ba6f6f7d9801" />
+Manufacturing QA teams need to catch defects before products ship. This project classifies
+surface images into five classes: `good`, `scratch`, `dent`, `stain`, and `crack`.
+For operations, missed defects are more costly than false alarms, so the binary
+defect threshold is configurable in `params.yaml`.
 
-## 🗂️ Dataset
-This project uses the MVTec Anomaly Detection (MVTec AD) dataset —— the standard benchamrk for indutrial defect detection.
+## Dataset
 
-<img width="582" height="576" alt="image" src="https://github.com/user-attachments/assets/9d621dd9-cbc4-4d68-a0d1-3c9e0429f9af" />
+The loader expects MVTec AD-style data under `data/mvtec_ad`:
 
-## Download and place at:
-data/
-└── mvtec_ad/
-    ├── bottle/
-    │   ├── train/good/
-    │   └── test/broken_large/
-    ├── wood/
-    └── ...
+```text
+data/mvtec_ad/
+  bottle/
+    train/good/
+    test/good/
+    test/broken_large/
+  wood/
+  metal_nut/
+  leather/
+  tile/
+```
 
-## ⚙️ Setup
-1. Clone the repo
-bashgit clone https://github.com/sajanshergill/manufacturing-defect-detection.git
-cd manufacturing-defect-detection
+Update `params.yaml` if your dataset root or categories differ.
 
-2. Create environment
-bashpython -m venv venv
-source venv/bin/activate
+## Setup
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+```
 
-3. Pull data with DVC
-bashdvc pull
+## Train
 
-4. Or run via Docker
-bashdocker-compose up --build
+```bash
+python src/training/train.py --model resnet
+python src/training/train.py --model efficientnet
+python src/training/train.py --model vit
+```
 
-## 🚀 Training
-**Train all three models**
-bashpython src/training/train.py --model resnet --epochs 30 --lr 1e-4
-python src/training/train.py --model efficientnet --epochs 30 --lr 5e-5
-python src/training/train.py --model vit --epochs 25 --lr 3e-5
+Checkpoints are written to `artifacts/checkpoints`. MLflow logs are written to
+`mlruns`:
 
-**Ensemble evaluation**
-bashpython src/training/evaluate.py --mode ensemble
+```bash
+mlflow ui --backend-store-uri mlruns
+```
 
-All experiments are automatically tracked in **MLflow**:
-mlflow ui
-### Open http://localhost:5000
+## Evaluate And Tune
 
-## 🎯 Threshold Tuning Strategy
-Standard F1-optimal threshold is **not used here** —— this is an intentional business decision.
+```bash
+python src/training/evaluate.py \
+  --mode ensemble \
+  --checkpoints \
+  resnet=artifacts/checkpoints/resnet_best.pt \
+  efficientnet=artifacts/checkpoints/efficientnet_best.pt \
+  vit=artifacts/checkpoints/vit_best.pt
 
-In manufacturing, a **missed defect (false negative)** reaching the customer is catastrophically more costly than a false alarm (false positive) triggering a manual reinspection.
-<img width="536" height="364" alt="image" src="https://github.com/user-attachments/assets/452062b3-0727-4e8b-8dff-6f8c946f1e00" />
+python src/training/threshold_tuning.py \
+  --predictions artifacts/evaluation/ensemble_test_predictions.csv
+```
 
-**Recall is the primary optimization target.** The threshold is treated as a configurable business parameter in params.yml, not a statis model artifact.
+## Inference
 
-## 📊 Results
-<img width="602" height="452" alt="image" src="https://github.com/user-attachments/assets/8312097f-2ca5-4929-ae0f-27cb9e328ef5" />
+```bash
+python src/pipeline/infer.py \
+  --mode single \
+  --model resnet \
+  --checkpoint artifacts/checkpoints/resnet_best.pt \
+  --input path/to/image_or_directory
+```
 
-Evaluated on held-out MVTec AD test set across 5 defect categories. Ensemble uses learned soft-voting weights optimized on the validation split.
+## Dashboard
 
-## 🧠 Explainability
-Every prediction ships with a Grad-CAM heatmap highlighting the image region that most influenced the classifiaction decision. This is critical for operator trust —— QA teams can visually verify that the model is attending to the actual defect region, not spurios background artifacts.
-
-from src.explainability.gradcam import generate_gradcam
-heatmap = generate_gradcam(model, image_tensor, target_class=2)
-
-## 📱 Streamlit Dashboard
+```bash
 streamlit run src/dashboard/app.py
+```
 
-**Features:**
+Or run the dashboard and MLflow UI with Docker:
 
+```bash
+docker-compose up --build
+```
 
+Dashboard: `http://localhost:8501`
+MLflow: `http://localhost:5000`
+
+## DVC Pipeline
+
+```bash
+dvc repro
+dvc dag
+```
 

@@ -1,0 +1,54 @@
+data:
+  root: data/mvtec_ad
+  categories:
+    - bottle
+    - wood
+    - metal_nut
+    - leather
+    - tile
+  img_size: 224
+  train_split: 0.7
+  val_split: 0.15
+  test_split: 0.15
+  num_workers: 4
+
+classes:
+  names:
+    - good
+    - scratch
+    - dent
+    - stain
+    - crack
+  num_classes: 5
+
+training:
+  epochs: 30
+  batch_size: 32
+  seed: 42
+
+models:
+  resnet:
+    lr: 1.0e-4
+    weight_decay: 1.0e-4
+    scheduler: cosine
+    dropout: 0.3
+  efficientnet:
+    lr: 5.0e-5
+    weight_decay: 1.0e-4
+    scheduler: cosine
+    dropout: 0.3
+  vit:
+    lr: 3.0e-5
+    weight_decay: 1.0e-2
+    scheduler: cosine
+    drop_path_rate: 0.1
+    layer_decay: 0.75
+
+ensemble:
+  mode: learned
+  threshold: 0.50
+  f1_optimal_threshold: 0.62
+
+mlflow:
+  experiment_name: manufacturing_defect_detection
+  tracking_uri: mlruns
